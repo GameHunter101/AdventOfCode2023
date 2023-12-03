@@ -1,3 +1,5 @@
+#![allow(unused)]
+
 const PASSING: CubeCounts = CubeCounts {
     red: 12,
     blue: 14,
@@ -19,21 +21,17 @@ fn main() {
 fn parse_line(line: String) -> i32 {
     let (meta, data) = line.split_once(": ").unwrap();
     let game_id: i32 = meta.split_at(5).1.parse().unwrap();
-    if parse_data(data) {
-        return game_id;
-    } else {
-        return 0;
-    }
+    parse_data(data)
 }
 
-fn parse_data(data: &str) -> bool {
+fn parse_data(data: &str) -> i32 {
     let cube_sets = data.split("; ").collect::<Vec<_>>();
     let mut accumulated_counts = CubeCounts::default();
     for set in cube_sets {
         let parsed_set = parse_set(set);
         accumulated_counts = accumulated_counts.max(&parsed_set);
     }
-    accumulated_counts.passes()
+    accumulated_counts.power()
 }
 
 #[derive(Debug)]
@@ -54,6 +52,10 @@ impl CubeCounts {
 
     pub fn passes(&self) -> bool {
         self.red <= PASSING.red && self.blue <= PASSING.blue && self.green <= PASSING.green
+    }
+
+    pub fn power(&self) -> i32 {
+        self.red * self.blue * self.green
     }
 }
 
