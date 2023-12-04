@@ -1,6 +1,6 @@
 fn main() {
     let input = String::from_utf8(std::fs::read("./src/input.txt").unwrap()).unwrap();
-    let symbol_positions = get_symbols(&input);
+    let symbol_positions = get_stars(&input);
 
     //println!("{symbol_positions:?}");
     let mut sum = 0;
@@ -11,12 +11,12 @@ fn main() {
     println!("{sum}");
 }
 
-fn get_symbols(input: &str) -> Vec<(usize, usize)> {
+fn get_stars(input: &str) -> Vec<(usize, usize)> {
     let lines = input.lines().collect::<Vec<_>>();
     let mut positions = vec![];
     for (y, line) in lines.iter().enumerate() {
         for (x, char) in line.char_indices() {
-            if !char.is_digit(10) && char != '.' {
+            if char == '*' {
                 positions.push((x, y));
             }
         }
@@ -26,7 +26,8 @@ fn get_symbols(input: &str) -> Vec<(usize, usize)> {
 
 fn sum_around_symbol(input: &str, position: (usize, usize)) -> i32 {
     let lines = input.lines().collect::<Vec<_>>();
-    let mut output = 0;
+    let mut output = 1;
+    let mut count = 0;
     for y in position.1.saturating_sub(1)..=position.1 + 1 {
         let line = lines[y];
         let chars = line.chars().collect::<Vec<_>>();
@@ -36,7 +37,8 @@ fn sum_around_symbol(input: &str, position: (usize, usize)) -> i32 {
             // println!("origin: {position:?}, ({x},{y}), {char:?}");
             if char.is_digit(10){
                 if !skip {
-                    output += get_full_number(&chars, x);
+                    output *= get_full_number(&chars, x);
+                    count += 1;
                 }
                 skip = true;
             } else {
@@ -44,7 +46,11 @@ fn sum_around_symbol(input: &str, position: (usize, usize)) -> i32 {
             }
         }
     }
-    output
+    if count == 2 {
+        output
+    } else {
+        0
+    }
 }
 
 fn get_full_number(chars: &Vec<char>, index: usize) -> i32 {
