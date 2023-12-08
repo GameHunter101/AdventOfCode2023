@@ -1,28 +1,58 @@
+use std::sync::Arc;
+
 fn main() {
     let input = String::from_utf8(std::fs::read("./src/input.txt").unwrap()).unwrap();
-    let seeds = parse_seeds(&input);
-    let maps = parse_maps(&input);
+    let seed_ranges = parse_seeds(&input);
+    let maps = Arc::new(parse_maps(&input));
 
     let mut lowest_location = u64::MAX;
-    for seed in seeds {
-        let mut input = seed;
-        for i in 0..7 {
-            input = apply_map(input, &maps, i);
-        }
-        lowest_location = lowest_location.min(input);
+    let mut handles = vec![];
+    for range in seed_ranges {
+        let maps_clone = maps.clone();
+        handles.push(std::thread::spawn(move || {
+            println!("{range:?}");
+            let mut lowest_local = u64::MAX;
+            for seed in range[0]..range[1] {
+                if seed % 1000000 == 0 {
+                    println!("{:.3}%", ((seed - range[0]) as f64 / (range[1]-range[0]) as f64) * 100.0);
+                }
+                let mut input = seed;
+                for i in 0..7 {
+                    input = apply_map(input, &maps_clone, i);
+                }
+                lowest_local = lowest_local.min(input);
+            }
+            return lowest_local;
+        }));
+    }
+
+    for handle in handles {
+        let location = handle.join().unwrap();
+        println!("{location}");
+        lowest_location = lowest_location.min(location);
     }
     println!("{lowest_location}");
 }
 
-fn parse_seeds(input: &str) -> [u64; 20] {
+fn parse_seeds(input: &str) -> [[u64; 2]; 10] {
     let first_line = input.lines().collect::<Vec<_>>()[0];
     let numbers_string = first_line.split_once(": ").unwrap().1;
-    let numbers = numbers_string
+    let numbers: [u64; 20] = numbers_string
         .split(" ")
         .map(|n| n.parse::<u64>().unwrap())
-        .collect::<Vec<_>>();
-    let numbers_array: [u64; 20] = numbers.try_into().unwrap();
-    numbers_array
+        .collect::<Vec<_>>()
+        .try_into()
+        .unwrap();
+
+    let mut seed_ranges = [[0; 2]; 10];
+
+    for i in 0..10 {
+        let range_start = numbers[i * 2];
+        let range_end = range_start + numbers[i * 2 + 1];
+        seed_ranges[i] = [range_start, range_end];
+    }
+
+    seed_ranges
 }
 
 type Map = Vec<[u64; 3]>;
